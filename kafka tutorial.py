@@ -1,51 +1,14 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 pip install confluent-kafka
-
-
-# In[1]:
-
-
 pip install confluent-kafka configparser
 
-
-# In[1]:
-
-
-def read_ccloud_config(config_file):
-    conf = {}
-    with open(config_file) as fh:
-        for line in fh:
-            line = line.strip()
-            if len(line) != 0 and line[0] != "#":
-                parameter, value = line.strip().split('=', 1)
-                conf[parameter] = value.strip()
-    return conf
-
-
-# In[3]:
-
-
-get_ipython().run_line_magic('ls', '')
-
-
-# In[22]:
-
-
+### to understand the structure of the response we receive from youtube/google API
 response = requests.get("https://www.googleapis.com/youtube/v3/playlistItems", 
                         params = {"key":"google api key", 
                                   "playlistId":"playlist id",
                                   "part":"contentDetails"})
 print(response.text)
 
-
-# In[37]:
-
-
+###for modulerization adding functions
 import json
 #FUNCTION for fetching the details from specific page in the playlist
 def fetch_items_page(page_token=None):
@@ -56,16 +19,10 @@ def fetch_items_page(page_token=None):
                                   "pageToken":page_token})
     return json.loads(response.text)
 
-
-# In[33]:
-
-
+'''
 if __name__ == '__main__':
     print(fetch_items_page())
-
-
-# In[39]:
-
+'''
 
 #funtion to iterate over the playlists' multiple pages
 def fetch_playlist_item(page_token = None):
@@ -75,25 +32,15 @@ def fetch_playlist_item(page_token = None):
     if next_page_token is not None:
         yield from fetch_playlist_item(next_page_token)
 
-
-# In[40]:
-
-
+###checking the output of the functions
 for items in fetch_playlist_item():
     print(items)
-
-
-# In[60]:
 
 
 for page_items in fetch_playlist_item():
     video_id = page_items["contentDetails"]["videoId"]
     for video in fetch_videos(video_id):
         print(video)
-
-
-# In[157]:
-
 
 def get_video_page(video_id):
     response = requests.get("https://www.googleapis.com/youtube/v3/videos", 
@@ -102,32 +49,17 @@ def get_video_page(video_id):
                                     "part":"snippet, statistics"})
     return json.loads(response.text)
 
-
-# In[69]:
-
-
 get_video_page("video_id")
-
-
-# In[74]:
 
 
 def get_video(video_id):
     payload = get_video_page(video_id)
     yield from payload['items']
 
-
-# In[84]:
-
-
 for playlist_items in fetch_playlist_item():
     video_id = playlist_items['contentDetails']['videoId']
     for video in get_video(video_id):
         print(pformat(video))
-
-
-# In[86]:
-
 
 def summerize_video(video):
     return {
@@ -137,21 +69,15 @@ def summerize_video(video):
     }
 
 
-# In[87]:
-
-
 for playlist_items in fetch_playlist_item():
     video_id = playlist_items['contentDetails']['videoId']
     for video in get_video(video_id):
         print(pformat(summerize_video(video)))
 
-
-# In[155]:
-
-
+###adding some additional libraries for further processing
 from confluent_kafka import SerializingProducer
 
-
+### this part of code can be added in the main function for simplicity
 schema_registry_client = SchemaRegistryClient(config['schema_registry'])
 youtube_video_schema = schema_registry_client.get_latest_version('youtube_video-value')
 
@@ -174,17 +100,14 @@ for playlist_items in fetch_playlist_item():
         )
 producer.flush()
 
-
-# In[145]:
-
-
+#creating the pass through function to send it as a value for producer object 
 def ondelivery(err, record):
     pass
 
 
-# In[156]:
-
-
+###necessary details needs to be maintained in below dictionary.
+### google api key can be obtained from google developer account
+###kafka related information can be received through any of the kafka service provide in this case I have used confluent kafka
 config = {
     "google_api_key":"google api key",
     "kafka":
@@ -200,23 +123,11 @@ config = {
                       }
 }
 
-
-# In[134]:
-
-
+###adding some more missing libraries.
 from confluent_kafka.serialization import StringSerializer
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroSerializer
 
-
-# In[158]:
-
-
-#for this project I have used confluent kafka library.
-
-
-# In[ ]:
-
-
-
-
+'''
+Please note that I have used jupyter notebook for the actual implementation of this project hence the sequence of the commands/code blogs might not be correct.
+please adjust accordingly to the editor thaat you are using'''
